@@ -1,0 +1,20 @@
+Build:
+    Favicon/manifest in build
+    Uncaught SyntaxError: Unexpected token '<'
+
+Rules:
+
+UI:
+    prevent moving through own piece
+    allow previous move (in red)
+
+    show last move
+
+
+Features:
+    version on screen
+    settings ui
+
+Development:
+    fix `yarn start`
+    stop inlining css and js
