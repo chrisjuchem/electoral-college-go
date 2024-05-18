@@ -20,16 +20,22 @@
 }
 
 .board {
-  width: min(400px, 90vmin);
-  height: min(400px, 90vmin);
+  width: min(900px, 90vmin);
+  height: min(900px, 90vmin);
 }
-coords.files {
-    left: min(18px, 4.5vmin) !important;
+.tint-red .intersection-tint {
+  fill: #dd7d7d75;
 }
-coords.ranks {
-    top: max(-16px, -4vmin) !important;
-    left: 0px !important;
+.tint-green .intersection-tint {
+  fill: #a8e38e75;
 }
+.tint-yellow .intersection-tint {
+  fill: #e7dc6f4d;
+}
+.tint-blue .intersection-tint {
+  fill: #7f7bdd75;
+}
+
 
 .idInput {
   font-size: calc(10px + 2vmin);
