@@ -1,6 +1,6 @@
 # Electoral College Go
 
-Web-based multiplayer go variant inspired with scoring based on the US's electoral college. 
+Web-based multiplayer go variant with scoring based on the US's electoral college. 
 Deployed at [chrisjuchem.dev/electoral-college-go](http://chrisjuchem.dev/electoral-college-go).
 
 # Deployment

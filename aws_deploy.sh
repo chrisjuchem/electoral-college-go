@@ -3,10 +3,10 @@
 
 set -e
 
-aws s3 cp ./build/index.html s3://www.chrisjuchem.dev/diplomacy-chess
+aws s3 cp ./build/index.html s3://www.chrisjuchem.dev/electoral-college-go
 
 aws s3 rm s3://www.chrisjuchem.dev/diplomacy-chess/ --recursive
-aws s3 cp build/diplomacy-chess s3://www.chrisjuchem.dev/diplomacy-chess/ --recursive
+aws s3 cp build/electoral-college-go s3://www.chrisjuchem.dev/electoral-college-go/ --recursive
 
 aws cloudfront create-invalidation --distribution-id E1SB35Z0FSXGIF \
-    --paths "/diplomacy-chess*"
+    --paths "/electoral-college-go*"
