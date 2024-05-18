@@ -8,7 +8,7 @@ function App() {
     const [started, setStarted] = useState(false);
     const [settings, setSettings] = useState({
         color: 'random',
-        version: '0.0.4',
+        version: 'go-0.0.1',
     });
 
     const [myId, setMyId] = useState(null);
@@ -48,7 +48,7 @@ function App() {
         if (data.version !== settings.version) return console.error("Client version mismatch");
         setSettings(data);
         setStarted(true);
-    }, []));
+    }, [settings.version]));
 
     const copyInviteLink = (e) => {
         navigator.clipboard.writeText(inviteLink);

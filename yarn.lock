@@ -1401,13 +1401,6 @@
     schema-utils "^3.0.0"
     source-map "^0.7.3"
 
-"@react-chess/chessground@^1.2.2":
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/@react-chess/chessground/-/chessground-1.2.2.tgz#fddbfb23f19a34796d3f89506b83e3594e818dcb"
-  integrity sha512-iYPhhXFTL9JSR290lB/KH2z4YSy1gT+phAWcXn/GbYXRsWOEU7nTwrQyNzSH0BaIjO8GcmWwfhQ4EHc/uBcbmA==
-  dependencies:
-    chessground "7.11.1"
-
 "@rollup/plugin-babel@^5.2.0":
   version "5.3.1"
   resolved "https://registry.yarnpkg.com/@rollup/plugin-babel/-/plugin-babel-5.3.1.tgz#04bc0608f4aa4b2e4b1aebf284344d0f68fda283"
@@ -3119,16 +3112,6 @@ cheerio@^0.22.0:
     lodash.reduce "^4.4.0"
     lodash.reject "^4.4.0"
     lodash.some "^4.4.0"
-
-chess.js@^0.12.1:
-  version "0.12.1"
-  resolved "https://registry.yarnpkg.com/chess.js/-/chess.js-0.12.1.tgz#0884a771893b50b6a594164f01281a08842bdb5d"
-  integrity sha512-95PsuUCtoxPyQNB+29k54OWGeEEpuWXu+d+oWL/fcko5T5NhDuGxaYmoXcZ6KUnFKyUYxdLjwqRqCWZonRuoJQ==
-
-chessground@7.11.1:
-  version "7.11.1"
-  resolved "https://registry.yarnpkg.com/chessground/-/chessground-7.11.1.tgz#7e126d660d63025f9bf27371a8778e2baeeb1b57"
-  integrity sha512-IwGSEZBsQlquHyudv1Y5EwlfTXrz0CEWisJuEim2W3eX07IBpYUsr0ChTD35du+Cr0x1+e6GbCLY3hVejKG7ow==
 
 chokidar@^2.0.0:
   version "2.1.8"
@@ -10172,6 +10155,11 @@ tempy@^0.6.0:
     temp-dir "^2.0.0"
     type-fest "^0.16.0"
     unique-string "^2.0.0"
+
+tenuki@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/tenuki/-/tenuki-0.3.1.tgz#8b53cae9641ad83c7d817b1fe8277181d3d742c0"
+  integrity sha512-4obVv+CHn0QXrtHEZOYXE69xweUAae/iHfEz6oqM+dKTcdL8b0G44knfjLtepu4UHdwW0OzxurXDXoZKzKOIIQ==
 
 terminal-link@^2.0.0:
   version "2.1.1"

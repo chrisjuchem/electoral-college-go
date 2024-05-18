@@ -1,0 +1,169 @@
+diff --git a/node_modules/tenuki/lib/board-state.js b/node_modules/tenuki/lib/board-state.js
+index 22a8b08..6c80ae5 100644
+--- a/node_modules/tenuki/lib/board-state.js
++++ b/node_modules/tenuki/lib/board-state.js
+@@ -82,7 +82,7 @@ BoardState.prototype = {
+       // we're checking against the move before the stone we just played
+       // where this space is not occupied yet. things should possibly be
+       // reworked.
+-      return !neighbor.isEmpty() && neighbor.value !== color && _this.libertiesAt(neighbor.y, neighbor.x) === 1;
++      return neighbor.isStone() && neighbor.value !== color && _this.libertiesAt(neighbor.y, neighbor.x) === 1;
+     });
+ 
+     var capturedStones = _utils2.default.flatMap(capturedNeighbors, function (neighbor) {
+@@ -334,7 +334,7 @@ BoardState.prototype = {
+   }
+ };
+ 
+-BoardState._initialFor = function (boardSize, handicapStones) {
++BoardState._initialFor = function (boardSize, handicapStones, oob) {
+   this._cache = this._cache || {};
+   this._cache[boardSize] = this._cache[boardSize] || {};
+ 
+@@ -376,6 +376,11 @@ BoardState._initialFor = function (boardSize, handicapStones) {
+     emptyPoints[p.y * boardSize + p.x] = new _intersection2.default(p.y, p.x, "black");
+   });
+ 
++  for (let i = 0; i < oob.length; i++) {
++    var p = oob[i];
++    emptyPoints[p.y * boardSize + p.x] = new _intersection2.default(p.y, p.x, "oob");
++  }
++
+   var initialState = new BoardState({
+     color: handicapStones > 1 ? "black" : "white",
+     moveNumber: 0,
+diff --git a/node_modules/tenuki/lib/game.js b/node_modules/tenuki/lib/game.js
+index 88875fc..c3e6b95 100644
+--- a/node_modules/tenuki/lib/game.js
++++ b/node_modules/tenuki/lib/game.js
+@@ -34,7 +34,7 @@ var _scorer2 = _interopRequireDefault(_scorer);
+ 
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+ 
+-var VALID_GAME_OPTIONS = ["element", "boardSize", "scoring", "handicapStones", "koRule", "komi", "_hooks", "fuzzyStonePlacement", "renderer", "freeHandicapPlacement"];
++var VALID_GAME_OPTIONS = ["element", "boardSize", "oob", "scoring", "handicapStones", "koRule", "komi", "_hooks", "fuzzyStonePlacement", "renderer", "freeHandicapPlacement"];
+ 
+ var Game = function Game() {
+   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+@@ -85,6 +85,8 @@ Game.prototype = {
+         scoring = _ref$scoring === undefined ? this._defaultScoring : _ref$scoring,
+         _ref$koRule = _ref.koRule,
+         koRule = _ref$koRule === undefined ? this._defaultKoRule : _ref$koRule,
++        _ref$oob = _ref.oob,
++        oob = _ref$oob === undefined ? [] : _ref$oob,
+         _ref$renderer = _ref.renderer,
+         renderer = _ref$renderer === undefined ? this._defaultRenderer : _ref$renderer;
+ 
+@@ -104,9 +106,9 @@ Game.prototype = {
+       throw new Error("Only 2 to 9 handicap stones are supported");
+     }
+ 
+-    if (boardSize > 19) {
+-      throw new Error("cannot generate a board size greater than 19");
+-    }
++//    if (boardSize > 19) {
++//      throw new Error("cannot generate a board size greater than 19");
++//    }
+ 
+     this.boardSize = boardSize;
+     this.handicapStones = handicapStones;
+@@ -131,10 +133,12 @@ Game.prototype = {
+     });
+ 
+     if (this._freeHandicapPlacement) {
+-      this._initialState = _boardState2.default._initialFor(boardSize, 0);
++      this._initialState = _boardState2.default._initialFor(boardSize, 0, oob);
+     } else {
+-      this._initialState = _boardState2.default._initialFor(boardSize, handicapStones);
++      this._initialState = _boardState2.default._initialFor(boardSize, handicapStones, oob);
+     }
++
++
+   },
+ 
+   _stillPlayingHandicapStones: function _stillPlayingHandicapStones() {
+diff --git a/node_modules/tenuki/lib/intersection.js b/node_modules/tenuki/lib/intersection.js
+index 0410b21..b29fca4 100644
+--- a/node_modules/tenuki/lib/intersection.js
++++ b/node_modules/tenuki/lib/intersection.js
+@@ -28,6 +28,10 @@ Intersection.prototype = {
+     return this.value === "white";
+   },
+ 
++  isStone: function isStone() {
++    return this.isWhite() || this.isBlack();
++  },
++
+   isEmpty: function isEmpty() {
+     return this.value === "empty";
+   },
+diff --git a/node_modules/tenuki/lib/renderer.js b/node_modules/tenuki/lib/renderer.js
+index 229e802..fd54043 100644
+--- a/node_modules/tenuki/lib/renderer.js
++++ b/node_modules/tenuki/lib/renderer.js
+@@ -547,7 +547,7 @@ Renderer.prototype = {
+ 
+     var classes = ["intersection"];
+ 
+-    if (intersection.isEmpty()) {
++    if (!intersection.isStone()) {
+       classes.push("empty");
+     } else {
+       classes.push("occupied");
+diff --git a/node_modules/tenuki/lib/svg-renderer.js b/node_modules/tenuki/lib/svg-renderer.js
+index 4fd8676..9bcbe2b 100644
+--- a/node_modules/tenuki/lib/svg-renderer.js
++++ b/node_modules/tenuki/lib/svg-renderer.js
+@@ -99,19 +99,40 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
+       }
+     });
+ 
+-    for (var y = 0; y < boardState.boardSize - 1; y++) {
+-      for (var x = 0; x < boardState.boardSize - 1; x++) {
+-        var lineBox = _utils2.default.createSVGElement("rect", {
+-          attributes: {
+-            y: y * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
+-            x: x * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
+-            width: renderer.INTERSECTION_GAP_SIZE + 1,
+-            height: renderer.INTERSECTION_GAP_SIZE + 1,
+-            class: "line-box"
+-          }
+-        });
++    console.log("rendering");
++    console.log(boardState);
++
++    for (var y = 0; y < boardState.boardSize; y++) {
++      for (var x = 0; x < boardState.boardSize; x++) {
++        if (boardState.intersectionAt(y, x).value === "oob") {
++          continue;
++        }
++
++        if (x + 1 < boardState.boardSize && boardState.intersectionAt(y, x + 1).value !== "oob") {
++          var line = _utils2.default.createSVGElement("line", {
++            attributes: {
++              y1: y * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              x1: x * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              y2: y * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              x2: (x + 1) * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              class: "line-box"
++            }
++          });
++          _utils2.default.appendElement(lines, line);
++        }
+ 
+-        _utils2.default.appendElement(lines, lineBox);
++        if (y + 1 < boardState.boardSize && boardState.intersectionAt(y + 1, x).value !== "oob") {
++          var line = _utils2.default.createSVGElement("line", {
++            attributes: {
++              y1: y * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              x1: x * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              y2: (y + 1) * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              x2: x * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
++              class: "line-box"
++            }
++          });
++          _utils2.default.appendElement(lines, line);
++        }
+       }
+     }
+ 
