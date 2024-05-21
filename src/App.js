@@ -28,8 +28,6 @@ function App() {
 
     // connected
     useHandler("connected", useCallback(() => {
-        setStarted(true);
-
         const sendSettings = {...settings};
         if (settings.color === 'white' ||
                 (settings.color === 'random' && Math.random() < 0.5)) {
@@ -40,6 +38,7 @@ function App() {
             sendSettings.color = 'white';
         }
         sendData("settings", sendSettings);
+        setStarted(true);
     }, [settings]));
 
     // settings

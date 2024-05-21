@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useHandler, sendData } from './network.js';
 import tenuki from 'tenuki';
 import './tenuki.css';
@@ -33,7 +33,7 @@ function calcScore(board) {
     }
 
 
-    let wPts=10, bPts=0; // komi
+    let wPts=10, bPts=0; // white komi = AK(3) + HI(4) + DC(3)
     for (let state in states) {
         if (control[state].white > control[state].black) {
             control[state].wPts += states[state].points;
@@ -53,7 +53,6 @@ function calcScore(board) {
 }
 
 export default function Board ({color}) {
-    const [won, _setWon] = useState(0);
     const boardRef = useRef(null);
 
     const [board, setBoard] = useState(null);
@@ -62,7 +61,31 @@ export default function Board ({color}) {
     const [[hovY, hovX], setHovered] = useState([0,0]);
     const hoveredState = states[map[hovY][hovX]];
 
-    useEffect( () => {
+    const [ourTurn, setOurTurn] = useState(color === "black");
+
+    useHandler("move", useCallback((move) => {
+        if (ourTurn) return console.error("received move on our turn");
+
+        if (move.pass) {
+            board.receivePass();
+        } else {
+            if (!move.y || !move.x || move.y < 0 || move.y >= 39 || move.x < 0 || move.x >= 39) {
+                return console.error("bad move:", move)
+            }
+            board.receivePlay(move.y, move.x);
+        }
+        setOurTurn(true);
+    }, [board, ourTurn, setOurTurn]));
+
+    useHandler("markDead", (move) => {
+        if (!move.y || !move.x || move.y < 0 || move.y >= 39 || move.x < 0 || move.x >= 39) {
+            return console.error("bad move:", move)
+        }
+        board.receiveMarkDeadAt(move.y, move.x);
+        setOurTurn(turn => !turn); // hack: trigger re-render of score
+    }, [board, setOurTurn]);
+
+    useEffect(() => {
         if (boardRef.current && !board) {
             let oob = [];
             for (let y = 0; y < 39; y++) {
@@ -72,42 +95,54 @@ export default function Board ({color}) {
                     }
                 }
             }
-            let b = new tenuki.Game({
+            let b = new tenuki.Client({
+                player: color,
                 element: boardRef.current,
-                scoring: "area",
-                boardSize: 39,
-                komi: 10, // AK(3) + HI(4) + DC(3)
+                gameOptions:{
+                    scoring: "area",
+                    boardSize: 39,
 
-                oob: oob,
-                tints: tints,
+                    oob: oob,
+                    tints: tints,
+                },
+                hooks: {
+                    submitPlay: function(y, x, result) {
+                        sendData("move", {y: y, x: x});
+                        setOurTurn(false);
+                        result(true);
+                    },
+                    submitMarkDeadAt: function(y, x, stones, result) {
+                        sendData("markDead", {y: y, x: x});
+                        setOurTurn(turn => !turn); // hack: trigger re-render of score
+                        result(true);
+                    },
+                    submitPass: function(result) {
+                        sendData("move", {pass: true});
+                        setOurTurn(false);
+                        result(true);
+                    }
+                }
             });
 
-            const oldhook = b.renderer.hooks.hoverValue;
-            b.renderer.hooks.hoverValue = function(y, x) {
+            const oldHoverHook = b._game.renderer.hooks.hoverValue;
+            b._game.renderer.hooks.hoverValue = function(y, x) {
                 setHovered([y, x]);
-                return oldhook(y, x);
+                return oldHoverHook(y, x);
             }
 
             setBoard(b);
         }
-    }, [boardRef.current, board])
+    }, [boardRef.current, board]);
 
-    function pass(e) {
-        board.pass();
-        setBoard(board);
-    }
-
-    let winString;
-    if (won === -1) {
-        winString = "You lost!"
-    } else if (won === 1) {
-        winString = "You won!"
-    }
-
-    let scoreString = "";
+    let statusString = "";
     if (board && board.isOver()) {
-       scoreString = `W ${wPts} - ${bPts} B`;
+        statusString = `W ${wPts} - ${bPts} B`;
+    } else if (!ourTurn) {
+        statusString = "Waiting for opponent to play...";
+    } else if (board && board._game._moves[board._game._moves.length - 1]?.pass) {
+        statusString = "Opponent passed.";
     }
+    const colorString = `You are playing as ${color}.`;
 
     let infoString = "";
     if (hoveredState) {
@@ -120,11 +155,12 @@ export default function Board ({color}) {
 
     // must have `tenuki-board` class for css to work
     return <>
-        <div className = "scoreinfo info"> {scoreString} </div>
+        <div className = "statusinfo info"> {statusString} </div>
+        <div className = "colorinfo info"> {colorString} </div>
 
         <div className="board tenuki-board" ref={boardRef}/>
 
-        <button onClick={pass} disabled={false}> Pass </button>
+        <button onClick={(e) => { board && board.pass() }} disabled={!ourTurn && board && !board.isOver()}> Pass </button>
         <div className = "stateinfo info"> {infoString} </div>
     </>;
 }

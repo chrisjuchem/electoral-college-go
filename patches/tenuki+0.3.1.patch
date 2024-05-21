@@ -32,6 +32,25 @@ index 22a8b08..6c80ae5 100644
    var initialState = new BoardState({
      color: handicapStones > 1 ? "black" : "white",
      moveNumber: 0,
+diff --git a/node_modules/tenuki/lib/client.js b/node_modules/tenuki/lib/client.js
+index 2614d87..f200e4c 100644
+--- a/node_modules/tenuki/lib/client.js
++++ b/node_modules/tenuki/lib/client.js
+@@ -97,6 +97,14 @@ Client.prototype = {
+     return this._game.isOver();
+   },
+ 
++  territory: function territory() {
++    return this._game.territory();
++  },
++
++  intersectionAt: function intersectionAt(y, x) {
++    return this._game.intersectionAt(y, x);
++  },
++
+   currentPlayer: function currentPlayer() {
+     return this._game.currentPlayer();
+   },
 diff --git a/node_modules/tenuki/lib/game.js b/node_modules/tenuki/lib/game.js
 index 88875fc..5a20a35 100644
 --- a/node_modules/tenuki/lib/game.js
