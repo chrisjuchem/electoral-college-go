@@ -106,11 +106,72 @@ index 0410b21..b29fca4 100644
    isEmpty: function isEmpty() {
      return this.value === "empty";
    },
+diff --git a/node_modules/tenuki/lib/region.js b/node_modules/tenuki/lib/region.js
+index 249abcd..cd4c322 100644
+--- a/node_modules/tenuki/lib/region.js
++++ b/node_modules/tenuki/lib/region.js
+@@ -95,7 +95,7 @@ Region.prototype = {
+ 
+     var surroundingColors = _utils2.default.unique(boundaryPoints.map(function (i) {
+       return i.value;
+-    }));
++    })).filter(function (color) {return color !== "oob"});
+     var isTerritory = surroundingColors.length === 1 && surroundingColors[0] !== "empty";
+ 
+     return isTerritory;
+@@ -111,7 +111,7 @@ Region.prototype = {
+ 
+     var surroundingColors = _utils2.default.unique(boundaryPoints.map(function (i) {
+       return i.value;
+-    }));
++    })).filter(function (color) {return color !== "oob"});
+     var isTerritory = surroundingColors.length === 1 && surroundingColors[0] !== "empty";
+ 
+     if (!point.isEmpty() || !isTerritory) {
 diff --git a/node_modules/tenuki/lib/renderer.js b/node_modules/tenuki/lib/renderer.js
-index 229e802..5fe2006 100644
+index 229e802..6c133a1 100644
 --- a/node_modules/tenuki/lib/renderer.js
 +++ b/node_modules/tenuki/lib/renderer.js
-@@ -547,7 +547,7 @@ Renderer.prototype = {
+@@ -205,6 +205,7 @@ Renderer.prototype = {
+     var scaleX = innerContainer.parentNode.clientWidth / innerContainer.clientWidth;
+     var scaleY = innerContainer.parentNode.clientHeight / innerContainer.clientHeight;
+     var scale = Math.min(scaleX, scaleY);
++    renderer.baseScale = scale;
+ 
+     if (scale > 0) {
+       if (scale < 1) {
+@@ -265,10 +266,9 @@ Renderer.prototype = {
+       var playedXPosition = x;
+ 
+       // if this isn't part of a touch,
+-      // or it is and the user is zoomed in,
+       // or it's game over and we're marking stones dead,
+       // then don't use the zoom/double-select system.
+-      if (!renderer._touchEventFired || document.body.clientWidth / window.innerWidth > 1 || renderer.hooks.gameIsOver()) {
++      if (!renderer._touchEventFired || renderer.hooks.gameIsOver()) {
+         renderer.hooks.handleClick(playedYPosition, playedXPosition);
+         return;
+       }
+@@ -276,6 +276,7 @@ Renderer.prototype = {
+       if (renderer.touchedPoint) {
+         if (element === renderer.touchedPoint) {
+           renderer.hooks.handleClick(playedYPosition, playedXPosition);
++          renderer.zoomOut();
+         } else {
+           renderer.showPossibleMoveAt(element, playedYPosition, playedXPosition);
+         }
+@@ -367,8 +368,8 @@ Renderer.prototype = {
+     var deltaX = xCursor - renderer.dragStartX;
+     var deltaY = yCursor - renderer.dragStartY;
+ 
+-    var translateY = renderer.translateY + deltaY / 2.5;
+-    var translateX = renderer.translateX + deltaX / 2.5;
++    var translateY = renderer.translateY + deltaY / 2.5 / renderer.baseScale;
++    var translateX = renderer.translateX + deltaX / 2.5 / renderer.baseScale;
+ 
+     if (translateY > 0.5 * innerContainer.clientHeight - renderer.MARGIN) {
+       translateY = 0.5 * innerContainer.clientHeight - renderer.MARGIN;
+@@ -547,7 +548,7 @@ Renderer.prototype = {
  
      var classes = ["intersection"];
  
@@ -119,7 +180,7 @@ index 229e802..5fe2006 100644
        classes.push("empty");
      } else {
        classes.push("occupied");
-@@ -567,6 +567,12 @@ Renderer.prototype = {
+@@ -567,6 +568,12 @@ Renderer.prototype = {
        });
      }
  

@@ -20,8 +20,8 @@
 }
 
 .board {
-  width: min(900px, 90vmin);
-  height: min(900px, 90vmin);
+  width: min(750px, 95vmin);
+  height: min(750px, 95vmin);
 }
 .tint-red .intersection-tint {
   fill: #dd7d7d75;
@@ -36,6 +36,9 @@
   fill: #7f7bdd75;
 }
 
+.stateinfo {
+    height: 1em;
+}
 
 .idInput {
   font-size: calc(10px + 2vmin);
