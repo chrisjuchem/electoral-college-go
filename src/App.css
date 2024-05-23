@@ -20,8 +20,8 @@
 }
 
 .board {
-  width: min(750px, 95vmin);
-  height: min(750px, 95vmin);
+  width: min(900px, 95vmin);
+  height: min(900px, 95vmin);
 }
 .hoshi {
     visibility: hidden;

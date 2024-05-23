@@ -10,8 +10,8 @@ function calcScore(board) {
 
     if (board) {
         let territory = board.territory();
-        for (let y = 0; y < 39; y++) {
-            for (let x = 0; x < 39; x++) {
+        for (let y = 0; y < map.length; y++) {
+            for (let x = 0; x < map[y].length; x++) {
                 const state = map[y][x];
                 if (state === "  ") {
                     continue;
@@ -108,8 +108,8 @@ export default function Board ({color}) {
     useEffect(() => {
         if (boardRef.current && !board) {
             let oob = [];
-            for (let y = 0; y < 39; y++) {
-                for (let x = 0; x < 39; x++) {
+            for (let y = 0; y < map.length; y++) {
+                for (let x = 0; x < map[y].length; x++) {
                     if (map[y][x] === "  ") {
                         oob.push({x:x, y:y})
                     }
@@ -120,7 +120,7 @@ export default function Board ({color}) {
                 element: boardRef.current,
                 gameOptions:{
                     scoring: "area",
-                    boardSize: 39,
+                    boardSize: {x:map[0].length, y:map.length},
 
                     oob: oob,
                     tints: tints,

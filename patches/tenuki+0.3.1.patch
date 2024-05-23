@@ -1,5 +1,5 @@
 diff --git a/node_modules/tenuki/lib/board-state.js b/node_modules/tenuki/lib/board-state.js
-index 22a8b08..6c80ae5 100644
+index 22a8b08..b72f780 100644
 --- a/node_modules/tenuki/lib/board-state.js
 +++ b/node_modules/tenuki/lib/board-state.js
 @@ -82,7 +82,7 @@ BoardState.prototype = {
@@ -11,27 +11,118 @@ index 22a8b08..6c80ae5 100644
      });
  
      var capturedStones = _utils2.default.flatMap(capturedNeighbors, function (neighbor) {
-@@ -334,7 +334,7 @@ BoardState.prototype = {
+@@ -131,7 +131,7 @@ BoardState.prototype = {
+   },
+ 
+   yCoordinateFor: function yCoordinateFor(y) {
+-    return this.boardSize - y;
++    return this.boardSize.y - y;
+   },
+ 
+   xCoordinateFor: function xCoordinateFor(x) {
+@@ -226,7 +226,7 @@ BoardState.prototype = {
+   },
+ 
+   intersectionAt: function intersectionAt(y, x) {
+-    if (y >= this.boardSize || x >= this.boardSize) {
++    if (y >= this.boardSize.y || x >= this.boardSize.x) {
+       throw new Error("Intersection at (" + y + ", " + x + ") would be outside the board");
+     }
+ 
+@@ -234,7 +234,7 @@ BoardState.prototype = {
+       throw new Error("Intersection position cannot be negative, but was given (" + y + ", " + x + ")");
+     }
+ 
+-    return this.intersections[y * this.boardSize + x];
++    return this.intersections[y * this.boardSize.x + x];
+   },
+ 
+   groupAt: function groupAt(y, x) {
+@@ -275,7 +275,7 @@ BoardState.prototype = {
+       neighbors.push(this.intersectionAt(y, x - 1));
+     }
+ 
+-    if (x < this.boardSize - 1) {
++    if (x < this.boardSize.x - 1) {
+       neighbors.push(this.intersectionAt(y, x + 1));
+     }
+ 
+@@ -283,7 +283,7 @@ BoardState.prototype = {
+       neighbors.push(this.intersectionAt(y - 1, x));
+     }
+ 
+-    if (y < this.boardSize - 1) {
++    if (y < this.boardSize.y - 1) {
+       neighbors.push(this.intersectionAt(y + 1, x));
+     }
+ 
+@@ -334,30 +334,23 @@ BoardState.prototype = {
    }
  };
  
 -BoardState._initialFor = function (boardSize, handicapStones) {
+-  this._cache = this._cache || {};
+-  this._cache[boardSize] = this._cache[boardSize] || {};
+-
+-  if (this._cache[boardSize][handicapStones]) {
+-    return this._cache[boardSize][handicapStones];
+-  }
+-
+-  var emptyPoints = Array.apply(null, Array(boardSize * boardSize));
 +BoardState._initialFor = function (boardSize, handicapStones, oob) {
-   this._cache = this._cache || {};
-   this._cache[boardSize] = this._cache[boardSize] || {};
++  var emptyPoints = Array.apply(null, Array(boardSize.x * boardSize.y));
+   emptyPoints = emptyPoints.map(function (x, i) {
+-    return new _intersection2.default(Math.floor(i / boardSize), i % boardSize);
++    return new _intersection2.default(Math.floor(i / boardSize.x), i % boardSize.x);
+   });
  
-@@ -376,6 +376,11 @@ BoardState._initialFor = function (boardSize, handicapStones) {
-     emptyPoints[p.y * boardSize + p.x] = new _intersection2.default(p.y, p.x, "black");
+-  var hoshiOffset = boardSize > 11 ? 3 : 2;
++  var hoshiOffset = boardSize.x > 11 ? 3 : 2;
+   var hoshiPoints = {
+-    topRight: { y: hoshiOffset, x: boardSize - hoshiOffset - 1 },
+-    bottomLeft: { y: boardSize - hoshiOffset - 1, x: hoshiOffset },
+-    bottomRight: { y: boardSize - hoshiOffset - 1, x: boardSize - hoshiOffset - 1 },
++    topRight: { y: hoshiOffset, x: boardSize.x - hoshiOffset - 1 },
++    bottomLeft: { y: boardSize.y - hoshiOffset - 1, x: hoshiOffset },
++    bottomRight: { y: boardSize.y - hoshiOffset - 1, x: boardSize.x - hoshiOffset - 1 },
+     topLeft: { y: hoshiOffset, x: hoshiOffset },
+-    middle: { y: (boardSize + 1) / 2 - 1, x: (boardSize + 1) / 2 - 1 },
+-    middleLeft: { y: (boardSize + 1) / 2 - 1, x: hoshiOffset },
+-    middleRight: { y: (boardSize + 1) / 2 - 1, x: boardSize - hoshiOffset - 1 },
+-    middleTop: { y: hoshiOffset, x: (boardSize + 1) / 2 - 1 },
+-    middleBottom: { y: boardSize - hoshiOffset - 1, x: (boardSize + 1) / 2 - 1 }
++    middle: { y: (boardSize.y + 1) / 2 - 1, x: (boardSize.x + 1) / 2 - 1 },
++    middleLeft: { y: (boardSize.y + 1) / 2 - 1, x: hoshiOffset },
++    middleRight: { y: (boardSize.y + 1) / 2 - 1, x: boardSize.x - hoshiOffset - 1 },
++    middleTop: { y: hoshiOffset, x: (boardSize.x + 1) / 2 - 1 },
++    middleBottom: { y: boardSize.y - hoshiOffset - 1, x: (boardSize.x + 1) / 2 - 1 }
+   };
+   var handicapPlacements = {
+     0: [],
+@@ -373,9 +366,14 @@ BoardState._initialFor = function (boardSize, handicapStones) {
+   };
+ 
+   handicapPlacements[handicapStones].forEach(function (p) {
+-    emptyPoints[p.y * boardSize + p.x] = new _intersection2.default(p.y, p.x, "black");
++    emptyPoints[p.y * boardSize.x + p.x] = new _intersection2.default(p.y, p.x, "black");
    });
  
 +  for (let i = 0; i < oob.length; i++) {
 +    var p = oob[i];
-+    emptyPoints[p.y * boardSize + p.x] = new _intersection2.default(p.y, p.x, "oob");
++    emptyPoints[p.y * boardSize.x + p.x] = new _intersection2.default(p.y, p.x, "oob");
 +  }
 +
    var initialState = new BoardState({
      color: handicapStones > 1 ? "black" : "white",
      moveNumber: 0,
+@@ -387,7 +385,6 @@ BoardState._initialFor = function (boardSize, handicapStones) {
+     boardSize: boardSize
+   });
+ 
+-  this._cache[boardSize][handicapStones] = initialState;
+   return initialState;
+ };
+ 
 diff --git a/node_modules/tenuki/lib/client.js b/node_modules/tenuki/lib/client.js
 index 2614d87..15b5fe1 100644
 --- a/node_modules/tenuki/lib/client.js
@@ -72,7 +163,7 @@ index 2614d87..15b5fe1 100644
      return this._game.currentPlayer();
    },
 diff --git a/node_modules/tenuki/lib/game.js b/node_modules/tenuki/lib/game.js
-index 88875fc..f92b922 100644
+index 88875fc..f785677 100644
 --- a/node_modules/tenuki/lib/game.js
 +++ b/node_modules/tenuki/lib/game.js
 @@ -34,7 +34,7 @@ var _scorer2 = _interopRequireDefault(_scorer);
@@ -84,7 +175,7 @@ index 88875fc..f92b922 100644
  
  var Game = function Game() {
    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-@@ -85,6 +85,10 @@ Game.prototype = {
+@@ -85,28 +85,32 @@ Game.prototype = {
          scoring = _ref$scoring === undefined ? this._defaultScoring : _ref$scoring,
          _ref$koRule = _ref.koRule,
          koRule = _ref$koRule === undefined ? this._defaultKoRule : _ref$koRule,
@@ -95,7 +186,24 @@ index 88875fc..f92b922 100644
          _ref$renderer = _ref.renderer,
          renderer = _ref$renderer === undefined ? this._defaultRenderer : _ref$renderer;
  
-@@ -104,9 +108,9 @@ Game.prototype = {
+-    if (typeof boardSize !== "number") {
+-      throw new Error("Board size must be a number, but was: " + (typeof boardSize === "undefined" ? "undefined" : _typeof(boardSize)));
++    if (typeof boardSize === "number") {
++      boardSize = {x: boardSize, y: boardSize};
+     }
+ 
+     if (typeof handicapStones !== "number") {
+       throw new Error("Handicap stones must be a number, but was: " + (typeof boardSize === "undefined" ? "undefined" : _typeof(boardSize)));
+     }
+ 
+-    if (handicapStones > 0 && boardSize !== 9 && boardSize !== 13 && boardSize !== 19) {
+-      throw new Error("Handicap stones not supported on sizes other than 9x9, 13x13 and 19x19");
+-    }
++//    if (handicapStones > 0 && boardSize !== 9 && boardSize !== 13 && boardSize !== 19) {
++//      throw new Error("Handicap stones not supported on sizes other than 9x9, 13x13 and 19x19");
++//    }
+ 
+     if (handicapStones < 0 || handicapStones === 1 || handicapStones > 9) {
        throw new Error("Only 2 to 9 handicap stones are supported");
      }
  
@@ -177,10 +285,90 @@ index 249abcd..cd4c322 100644
  
      if (!point.isEmpty() || !isTerritory) {
 diff --git a/node_modules/tenuki/lib/renderer.js b/node_modules/tenuki/lib/renderer.js
-index 229e802..6c133a1 100644
+index 229e802..3f45da5 100644
 --- a/node_modules/tenuki/lib/renderer.js
 +++ b/node_modules/tenuki/lib/renderer.js
-@@ -205,6 +205,7 @@ Renderer.prototype = {
+@@ -44,22 +44,22 @@ var Renderer = function Renderer(boardElement, _ref) {
+ Renderer.hoshiPositionsFor = function (boardSize) {
+   var hoshiElements = [];
+ 
+-  if (boardSize < 7) {
+-    if (boardSize > 1 && boardSize % 2 === 1) {
++  if (boardSize.x < 7) {
++    if (boardSize.x > 1 && boardSize.x % 2 === 1) {
+       var hoshi = {};
+-      hoshi.top = (boardSize - 1) / 2;
+-      hoshi.left = hoshi.top;
++      hoshi.top = (boardSize.y - 1) / 2;
++      hoshi.left = (boardSize.x - 1) / 2;
+ 
+       hoshiElements.push(hoshi);
+     } else {
+       // no hoshi
+     }
+   } else {
+-    var hoshiOffset = boardSize > 11 ? 3 : 2;
++    var hoshiOffset = boardSize.x > 11 ? 3 : 2;
+ 
+     for (var hoshiY = 0; hoshiY < 3; hoshiY++) {
+       for (var hoshiX = 0; hoshiX < 3; hoshiX++) {
+-        if ((boardSize === 7 || boardSize % 2 === 0) && (hoshiY === 1 || hoshiX === 1)) {
++        if ((boardSize.x === 7 || boardSize.x % 2 === 0) && (hoshiY === 1 || hoshiX === 1)) {
+           continue;
+         }
+ 
+@@ -70,11 +70,11 @@ Renderer.hoshiPositionsFor = function (boardSize) {
+         }
+ 
+         if (hoshiY === 1) {
+-          _hoshi.top = (boardSize + 1) / 2 - 1;
++          _hoshi.top = (boardSize.y + 1) / 2 - 1;
+         }
+ 
+         if (hoshiY === 2) {
+-          _hoshi.top = boardSize - hoshiOffset - 1;
++          _hoshi.top = boardSize.y - hoshiOffset - 1;
+         }
+ 
+         if (hoshiX === 0) {
+@@ -82,11 +82,11 @@ Renderer.hoshiPositionsFor = function (boardSize) {
+         }
+ 
+         if (hoshiX === 1) {
+-          _hoshi.left = (boardSize + 1) / 2 - 1;
++          _hoshi.left = (boardSize.x + 1) / 2 - 1;
+         }
+ 
+         if (hoshiX === 2) {
+-          _hoshi.left = boardSize - hoshiOffset - 1;
++          _hoshi.left = boardSize.x - hoshiOffset - 1;
+         }
+ 
+         hoshiElements.push(_hoshi);
+@@ -102,7 +102,8 @@ Renderer.prototype = {
+     var renderer = this;
+     var boardElement = this.boardElement;
+ 
+-    renderer.BOARD_LENGTH = 2 * this.MARGIN + (boardState.boardSize - 1) * (this.INTERSECTION_GAP_SIZE + 1);
++    renderer.BOARD_HEIGHT = 2 * this.MARGIN + (boardState.boardSize.y - 1) * (this.INTERSECTION_GAP_SIZE + 1);
++    renderer.BOARD_WIDTH = 2 * this.MARGIN + (boardState.boardSize.x - 1) * (this.INTERSECTION_GAP_SIZE + 1);
+ 
+     var innerContainer = _utils2.default.createElement("div", { class: "tenuki-inner-container" });
+     renderer.innerContainer = innerContainer;
+@@ -196,15 +197,16 @@ Renderer.prototype = {
+     // dev-friendly reset of whether this is a touch device
+     renderer._touchEventFired = null;
+ 
+-    innerContainer.style.width = renderer.BOARD_LENGTH + "px";
+-    innerContainer.style.height = renderer.BOARD_LENGTH + "px";
++    innerContainer.style.width = renderer.BOARD_WIDTH + "px";
++    innerContainer.style.height = renderer.BOARD_HEIGHT + "px";
+ 
+-    zoomContainer.style.width = renderer.BOARD_LENGTH + "px";
+-    zoomContainer.style.height = renderer.BOARD_LENGTH + "px";
++    zoomContainer.style.width = renderer.BOARD_WIDTH + "px";
++    zoomContainer.style.height = renderer.BOARD_HEIGHT + "px";
+ 
      var scaleX = innerContainer.parentNode.clientWidth / innerContainer.clientWidth;
      var scaleY = innerContainer.parentNode.clientHeight / innerContainer.clientHeight;
      var scale = Math.min(scaleX, scaleY);
@@ -188,7 +376,7 @@ index 229e802..6c133a1 100644
  
      if (scale > 0) {
        if (scale < 1) {
-@@ -265,10 +266,9 @@ Renderer.prototype = {
+@@ -265,10 +267,9 @@ Renderer.prototype = {
        var playedXPosition = x;
  
        // if this isn't part of a touch,
@@ -200,7 +388,7 @@ index 229e802..6c133a1 100644
          renderer.hooks.handleClick(playedYPosition, playedXPosition);
          return;
        }
-@@ -276,6 +276,7 @@ Renderer.prototype = {
+@@ -276,6 +277,7 @@ Renderer.prototype = {
        if (renderer.touchedPoint) {
          if (element === renderer.touchedPoint) {
            renderer.hooks.handleClick(playedYPosition, playedXPosition);
@@ -208,7 +396,7 @@ index 229e802..6c133a1 100644
          } else {
            renderer.showPossibleMoveAt(element, playedYPosition, playedXPosition);
          }
-@@ -367,8 +368,8 @@ Renderer.prototype = {
+@@ -367,8 +369,8 @@ Renderer.prototype = {
      var deltaX = xCursor - renderer.dragStartX;
      var deltaY = yCursor - renderer.dragStartY;
  
@@ -219,7 +407,7 @@ index 229e802..6c133a1 100644
  
      if (translateY > 0.5 * innerContainer.clientHeight - renderer.MARGIN) {
        translateY = 0.5 * innerContainer.clientHeight - renderer.MARGIN;
-@@ -547,7 +548,7 @@ Renderer.prototype = {
+@@ -547,7 +549,7 @@ Renderer.prototype = {
  
      var classes = ["intersection"];
  
@@ -228,7 +416,7 @@ index 229e802..6c133a1 100644
        classes.push("empty");
      } else {
        classes.push("occupied");
-@@ -567,6 +568,12 @@ Renderer.prototype = {
+@@ -567,6 +569,12 @@ Renderer.prototype = {
        });
      }
  
@@ -242,7 +430,7 @@ index 229e802..6c133a1 100644
    },
  
 diff --git a/node_modules/tenuki/lib/svg-renderer.js b/node_modules/tenuki/lib/svg-renderer.js
-index 4fd8676..253e281 100644
+index 4fd8676..512f9d6 100644
 --- a/node_modules/tenuki/lib/svg-renderer.js
 +++ b/node_modules/tenuki/lib/svg-renderer.js
 @@ -99,19 +99,37 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
@@ -260,14 +448,14 @@ index 4fd8676..253e281 100644
 -            class: "line-box"
 -          }
 -        });
-+    for (var y = 0; y < boardState.boardSize; y++) {
-+      for (var x = 0; x < boardState.boardSize; x++) {
++    for (var y = 0; y < boardState.boardSize.y; y++) {
++      for (var x = 0; x < boardState.boardSize.x; x++) {
 +        if (boardState.intersectionAt(y, x).value === "oob") {
 +          continue;
 +        }
  
 -        _utils2.default.appendElement(lines, lineBox);
-+        if (x + 1 < boardState.boardSize && boardState.intersectionAt(y, x + 1).value !== "oob") {
++        if (x + 1 < boardState.boardSize.x && boardState.intersectionAt(y, x + 1).value !== "oob") {
 +          var line = _utils2.default.createSVGElement("line", {
 +            attributes: {
 +              y1: y * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
@@ -280,7 +468,7 @@ index 4fd8676..253e281 100644
 +          _utils2.default.appendElement(lines, line);
 +        }
 +
-+        if (y + 1 < boardState.boardSize && boardState.intersectionAt(y + 1, x).value !== "oob") {
++        if (y + 1 < boardState.boardSize.y && boardState.intersectionAt(y + 1, x).value !== "oob") {
 +          var line = _utils2.default.createSVGElement("line", {
 +            attributes: {
 +              y1: y * (renderer.INTERSECTION_GAP_SIZE + 1) - 0.5,
@@ -295,6 +483,44 @@ index 4fd8676..253e281 100644
        }
      }
  
+@@ -148,7 +166,7 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
+       var _loop = function _loop(_y) {
+         // TODO: 16 is for the rendered height _on my browser_. not reliable...
+ 
+-        [16 / 2 + 1 - (16 + 16 / 2 + 16 / (2 * 2) + 16 / (2 * 2 * 2)), 16 / 2 + 1 + (16 + 16 / 2) + (boardState.boardSize - 1) * (renderer.INTERSECTION_GAP_SIZE + 1)].forEach(function (verticalOffset) {
++        [16 / 2 + 1 - (16 + 16 / 2 + 16 / (2 * 2) + 16 / (2 * 2 * 2)), 16 / 2 + 1 + (16 + 16 / 2) + (boardState.boardSize.x - 1) * (renderer.INTERSECTION_GAP_SIZE + 1)].forEach(function (verticalOffset) {
+           _utils2.default.appendElement(coordinateContainer, _utils2.default.createSVGElement("text", {
+             text: boardState.xCoordinateFor(_y),
+             attributes: {
+@@ -159,7 +177,7 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
+           }));
+         });
+ 
+-        [-1 * (16 + 16 / 2 + 16 / (2 * 2)), 16 + 16 / 2 + 16 / (2 * 2) + (boardState.boardSize - 1) * (renderer.INTERSECTION_GAP_SIZE + 1)].forEach(function (horizontalOffset) {
++        [-1 * (16 + 16 / 2 + 16 / (2 * 2)), 16 + 16 / 2 + 16 / (2 * 2) + (boardState.boardSize.y - 1) * (renderer.INTERSECTION_GAP_SIZE + 1)].forEach(function (horizontalOffset) {
+           _utils2.default.appendElement(coordinateContainer, _utils2.default.createSVGElement("text", {
+             text: boardState.yCoordinateFor(_y),
+             attributes: {
+@@ -173,7 +191,7 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
+         _utils2.default.appendElement(svg, coordinateContainer);
+       };
+ 
+-      for (var _y = 0; _y < boardState.boardSize; _y++) {
++      for (var _y = 0; _y < boardState.boardSize.y; _y++) {
+         _loop(_y);
+       }
+     })();
+@@ -181,8 +199,8 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
+ 
+   var intersections = _utils2.default.createSVGElement("g", { attributes: { class: "intersections" } });
+ 
+-  for (var _y2 = 0; _y2 < boardState.boardSize; _y2++) {
+-    for (var _x = 0; _x < boardState.boardSize; _x++) {
++  for (var _y2 = 0; _y2 < boardState.boardSize.y; _y2++) {
++    for (var _x = 0; _x < boardState.boardSize.x; _x++) {
+       var intersectionGroup = _utils2.default.createSVGElement("g", {
+         attributes: {
+           class: "intersection"
 @@ -203,8 +221,9 @@ var constructSVG = function constructSVG(renderer, boardState, _ref2) {
          attributes: {
            y: _y2 * (renderer.INTERSECTION_GAP_SIZE + 1) - renderer.INTERSECTION_GAP_SIZE / 2 - 0.5,
@@ -307,3 +533,27 @@ index 4fd8676..253e281 100644
          }
        });
        _utils2.default.appendElement(intersectionInnerContainer, intersectionBox);
+@@ -290,8 +309,8 @@ SVGRenderer.prototype.generateBoard = function (boardState, _ref3) {
+   var svg = constructSVG(this, boardState, { hasCoordinates: hasCoordinates, smallerStones: smallerStones, flatStones: flatStones });
+ 
+   this.svgElement = svg;
+-  this.svgElement.setAttribute("height", this.BOARD_LENGTH);
+-  this.svgElement.setAttribute("width", this.BOARD_LENGTH);
++  this.svgElement.setAttribute("height", this.BOARD_HEIGHT);
++  this.svgElement.setAttribute("width", this.BOARD_WIDTH);
+ 
+   return svg;
+ };
+diff --git a/node_modules/tenuki/lib/zobrist.js b/node_modules/tenuki/lib/zobrist.js
+index 935f5e8..8e1e092 100644
+--- a/node_modules/tenuki/lib/zobrist.js
++++ b/node_modules/tenuki/lib/zobrist.js
+@@ -30,7 +30,7 @@ exports.default = {
+ 
+     intersections.forEach(function (i) {
+       if (!i.isEmpty()) {
+-        var initial = initialBitstringFor(boardSize, i.y, i.x, i.value);
++        var initial = initialBitstringFor(boardSize.y * 100 + boardSize.x, i.y, i.x, i.value);
+         h = h ^ initial;
+       }
+     });
