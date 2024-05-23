@@ -23,6 +23,9 @@
   width: min(750px, 95vmin);
   height: min(750px, 95vmin);
 }
+.hoshi {
+    visibility: hidden;
+}
 .tint-red .intersection-tint {
   fill: #dd7d7d75;
 }
