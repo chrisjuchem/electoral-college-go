@@ -33,10 +33,30 @@ index 22a8b08..6c80ae5 100644
      color: handicapStones > 1 ? "black" : "white",
      moveNumber: 0,
 diff --git a/node_modules/tenuki/lib/client.js b/node_modules/tenuki/lib/client.js
-index 2614d87..f200e4c 100644
+index 2614d87..15b5fe1 100644
 --- a/node_modules/tenuki/lib/client.js
 +++ b/node_modules/tenuki/lib/client.js
-@@ -97,6 +97,14 @@ Client.prototype = {
+@@ -43,14 +43,12 @@ Client.prototype = {
+         _this._busy = true;
+ 
+         if (_this.isOver()) {
+-          var stonesToBeMarkedDead = _this._game.currentState().groupAt(y, x).map(function (i) {
+-            return {
+-              y: i.y,
+-              x: i.x,
+-              color: i.color
+-            };
+-          });
++          var stonesToBeMarkedDead = _this._game.currentState().groupAt(y, x);
++          if (!stonesToBeMarkedDead[0].isStone()) {
++            _this._busy = false;
+ 
++            return;
++          }
+           _this._hooks.submitMarkDeadAt(y, x, stonesToBeMarkedDead, function (result) {
+             if (result) {
+               _this._game.toggleDeadAt(y, x);
+@@ -97,6 +95,14 @@ Client.prototype = {
      return this._game.isOver();
    },
  
@@ -52,7 +72,7 @@ index 2614d87..f200e4c 100644
      return this._game.currentPlayer();
    },
 diff --git a/node_modules/tenuki/lib/game.js b/node_modules/tenuki/lib/game.js
-index 88875fc..5a20a35 100644
+index 88875fc..f92b922 100644
 --- a/node_modules/tenuki/lib/game.js
 +++ b/node_modules/tenuki/lib/game.js
 @@ -34,7 +34,7 @@ var _scorer2 = _interopRequireDefault(_scorer);
@@ -110,6 +130,15 @@ index 88875fc..5a20a35 100644
          }
        });
      } else {
+@@ -338,7 +343,7 @@ Game.prototype = {
+         candidates = _currentState$partiti2[0];
+ 
+     candidates.forEach(function (sameColorOrEmpty) {
+-      if (!sameColorOrEmpty.isEmpty()) {
++      if (sameColorOrEmpty.isStone()) {
+         chosenDead.push(sameColorOrEmpty);
+       }
+     });
 diff --git a/node_modules/tenuki/lib/intersection.js b/node_modules/tenuki/lib/intersection.js
 index 0410b21..b29fca4 100644
 --- a/node_modules/tenuki/lib/intersection.js

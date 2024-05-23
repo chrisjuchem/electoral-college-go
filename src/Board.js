@@ -74,7 +74,7 @@ export default function Board ({color}) {
     const [undoRequested, setUndoRequested] = useState(false);
 
     const [acceptedScore, setAcceptedScore] = useState(false);
-    const [acceptTimeout, setAcceptTimeout] = useState(false);
+    const [acceptTimeout, setAcceptTimeout] = useState(null);
     const [oppAcceptedScore, setOppAcceptedScore] = useState(false);
 
     useHandler("move", useCallback((move) => {
@@ -100,8 +100,9 @@ export default function Board ({color}) {
         setOurTurn(turn => !turn); // hack: trigger re-render of score
         setAcceptedScore(false);
         setOppAcceptedScore(false);
-        setAcceptTimeout(true);
-        setTimeout(() => setAcceptTimeout(false), 1500);
+
+        clearTimeout(acceptTimeout);
+        setAcceptTimeout(setTimeout(() => setAcceptTimeout(null), 1500));;
     }, [board, setOurTurn]);
 
     useEffect(() => {
