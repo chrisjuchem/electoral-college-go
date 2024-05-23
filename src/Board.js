@@ -62,6 +62,8 @@ export default function Board ({color}) {
     const hoveredState = states[map[hovY][hovX]];
 
     const [ourTurn, setOurTurn] = useState(color === "black");
+    const [gameOver, setGameOver] = useState(false);
+    const [undoRequested, setUndoRequested] = useState(false);
 
     useHandler("move", useCallback((move) => {
         if (ourTurn) return console.error("received move on our turn");
@@ -75,6 +77,7 @@ export default function Board ({color}) {
             board.receivePlay(move.y, move.x);
         }
         setOurTurn(true);
+        setUndoRequested(false);
     }, [board, ourTurn, setOurTurn]));
 
     useHandler("markDead", (move) => {
@@ -108,18 +111,20 @@ export default function Board ({color}) {
                 hooks: {
                     submitPlay: function(y, x, result) {
                         sendData("move", {y: y, x: x});
-                        setOurTurn(false);
                         result(true);
+                        setOurTurn(false);
+                        setUndoRequested(false);
                     },
                     submitMarkDeadAt: function(y, x, stones, result) {
+                        result(true);
                         sendData("markDead", {y: y, x: x});
                         setOurTurn(turn => !turn); // hack: trigger re-render of score
-                        result(true);
                     },
                     submitPass: function(result) {
+                        result(true);
                         sendData("move", {pass: true});
                         setOurTurn(false);
-                        result(true);
+                        setUndoRequested(false);
                     }
                 }
             });
@@ -132,7 +137,36 @@ export default function Board ({color}) {
 
             setBoard(b);
         }
-    }, [boardRef.current, board]);
+    }, [boardRef, board, color]);
+
+    const processUndo = useCallback(() => {
+        setUndoRequested(false);
+        setOurTurn(turn => !turn);
+        board._game.undo();
+    }, [board, setUndoRequested, setOurTurn]);
+
+    const requestUndo = useCallback(() => {
+        setUndoRequested(true);
+        sendData("undo", "requested");
+    }, [setUndoRequested]);
+
+    const grantUndo = useCallback(() => {
+        sendData("undo", "granted");
+        processUndo();
+    }, [processUndo]);
+
+
+    useHandler("undo", useCallback(status => {
+        if (status === "requested") {
+            setUndoRequested(true);
+        } else if (status === "granted") {
+            if (!undoRequested || ourTurn) { return console.error("Undo granted when not requested!"); }
+            processUndo();
+        } else {
+            console.error("bad undo message:", status)
+        }
+    }, [setUndoRequested, processUndo, undoRequested, ourTurn]));
+
 
     let statusString = "";
     if (board && board.isOver()) {
@@ -141,6 +175,8 @@ export default function Board ({color}) {
         statusString = "Waiting for opponent to play...";
     } else if (board && board._game._moves[board._game._moves.length - 1]?.pass) {
         statusString = "Opponent passed.";
+    } else if (undoRequested) {
+        statusString = "Opponent requested an undo.";
     }
     const colorString = `You are playing as ${color}.`;
 
@@ -160,7 +196,18 @@ export default function Board ({color}) {
 
         <div className="board tenuki-board" ref={boardRef}/>
 
-        <button onClick={(e) => { board && board.pass() }} disabled={!ourTurn && board && !board.isOver()}> Pass </button>
+        <div className="button-row">
+            {board && !board.isOver() && <button
+                    onClick={(e) => { board && board.pass() }}
+                    disabled={!ourTurn}
+                > Pass </button>}
+            {board && !board.isOver() && <button
+                    onClick={(e) => { if (ourTurn) { grantUndo(); } else { requestUndo(); } }}
+                    disabled={(ourTurn && !undoRequested) || board._game._moves.length < 1}
+                > { undoRequested
+                    ? ourTurn ? "Grant Undo" : "Undo Requested!"
+                    : "Request Undo"} </button>}
+        </div>
         <div className = "stateinfo info"> {infoString} </div>
     </>;
 }
