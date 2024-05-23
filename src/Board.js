@@ -58,12 +58,24 @@ export default function Board ({color}) {
     const [board, setBoard] = useState(null);
     const [wPts, bPts, control] = calcScore(board);
 
+    let usPts = wPts, themPts = bPts, us="W", them="B";
+    if (color === "black") {
+        usPts = bPts;
+        themPts = wPts;
+        us="B";
+        them="W";
+    }
+
     const [[hovY, hovX], setHovered] = useState([0,0]);
     const hoveredState = states[map[hovY][hovX]];
 
     const [ourTurn, setOurTurn] = useState(color === "black");
     const [gameOver, setGameOver] = useState(false);
     const [undoRequested, setUndoRequested] = useState(false);
+
+    const [acceptedScore, setAcceptedScore] = useState(false);
+    const [acceptTimeout, setAcceptTimeout] = useState(false);
+    const [oppAcceptedScore, setOppAcceptedScore] = useState(false);
 
     useHandler("move", useCallback((move) => {
         if (ourTurn) return console.error("received move on our turn");
@@ -86,6 +98,10 @@ export default function Board ({color}) {
         }
         board.receiveMarkDeadAt(move.y, move.x);
         setOurTurn(turn => !turn); // hack: trigger re-render of score
+        setAcceptedScore(false);
+        setOppAcceptedScore(false);
+        setAcceptTimeout(true);
+        setTimeout(() => setAcceptTimeout(false), 1500);
     }, [board, setOurTurn]);
 
     useEffect(() => {
@@ -119,6 +135,8 @@ export default function Board ({color}) {
                         result(true);
                         sendData("markDead", {y: y, x: x});
                         setOurTurn(turn => !turn); // hack: trigger re-render of score
+                        setAcceptedScore(false);
+                        setOppAcceptedScore(false);
                     },
                     submitPass: function(result) {
                         result(true);
@@ -155,7 +173,6 @@ export default function Board ({color}) {
         processUndo();
     }, [processUndo]);
 
-
     useHandler("undo", useCallback(status => {
         if (status === "requested") {
             setUndoRequested(true);
@@ -167,26 +184,65 @@ export default function Board ({color}) {
         }
     }, [setUndoRequested, processUndo, undoRequested, ourTurn]));
 
+    const resumePlay = useCallback(() => {
+        board._game._moves.pop();
+        let turn = board._game._moves.pop().color;
+        board._game.render();
+        setOurTurn(turn => !turn); // force rerender
+        setOurTurn(turn === color);
+    }, [color, board, setOurTurn]);
+
+    useHandler("accept", useCallback((acc) => {
+        if (!board.isOver()) { return console.error("Cannot accept in-progress game."); }
+        if (gameOver) { return console.error("Cannot accept finished game."); }
+        if (acc) {
+            setOppAcceptedScore(true);
+        } else {
+            resumePlay();
+        }
+    }, [resumePlay, board, gameOver, setOppAcceptedScore]));
+    useEffect(() => {
+        if (acceptedScore && oppAcceptedScore) {
+            setGameOver(true);
+        }
+    }, [acceptedScore, oppAcceptedScore, setGameOver])
+
 
     let statusString = "";
-    if (board && board.isOver()) {
-        statusString = `W ${wPts} - ${bPts} B`;
+    if (gameOver) {
+        if (usPts > themPts) {
+            statusString = "You won!";
+        } else if (usPts < themPts) {
+            statusString = "You lost!";
+        } else {
+            statusString = "Draw!";
+        }
+    } else if (board && board.isOver() && !acceptedScore) {
+        statusString = "Mark the dead stones.";
     } else if (!ourTurn) {
-        statusString = "Waiting for opponent to play...";
+        statusString = "Waiting for opponent...";
     } else if (board && board._game._moves[board._game._moves.length - 1]?.pass) {
         statusString = "Opponent passed.";
     } else if (undoRequested) {
         statusString = "Opponent requested an undo.";
     }
-    const colorString = `You are playing as ${color}.`;
+
+    let colorString = `You are playing as ${color}.`;
+    if (board && board.isOver()) {
+       colorString = `${us} ${usPts} - ${themPts} ${them}`;
+    }
 
     let infoString = "";
     if (hoveredState) {
         infoString = `${hoveredState.name} (${hoveredState.points} pts.) - `;
 
         const score = control[map[hovY][hovX]];
-        infoString += `${score.wPts? " W+"+score.wPts : ""} ${score.bPts? " B+"+score.bPts : ""}`;
-        infoString += ` (W ${score.white}-${score.black} B)`;
+        const other = color === "white" ? "black" : "white";
+        const ourPts = color === "white" ? score.wPts : score.bPts;
+        const theirPts = color === "white" ? score.bPts: score.wPts;
+
+        infoString += `${ourPts ? ` ${us}+${ourPts}` : ""} ${theirPts? ` ${them}+${theirPts}` : ""}`;
+        infoString += ` (${us} ${score[color]}-${score[other]} ${them})`;
     }
 
     // must have `tenuki-board` class for css to work
@@ -207,6 +263,13 @@ export default function Board ({color}) {
                 > { undoRequested
                     ? ourTurn ? "Grant Undo" : "Undo Requested!"
                     : "Request Undo"} </button>}
+            {board && board.isOver() && !gameOver && <button
+                onClick={ (e) => { sendData("accept", true); setAcceptedScore(true); setOurTurn(false); }}
+                disabled={acceptedScore || acceptTimeout}
+            > Accept Score </button>}
+            {board && board.isOver() && !gameOver && <button
+                onClick={ (e) => { sendData("accept", false); resumePlay(); }}
+            > Resume Play </button>}
         </div>
         <div className = "stateinfo info"> {infoString} </div>
     </>;
