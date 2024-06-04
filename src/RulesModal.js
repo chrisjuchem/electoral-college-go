@@ -120,8 +120,8 @@ function Rules () {
 
         <div className="rulesImgs" style={info.vertical ? {'flex-direction': 'vertical'} : {}}>
             {info.images.map(imgName =>
-                <div className="rulesImg">
-                    <img key={imgName} src={`electoral-college-go/tutorial/${imgName}.png`} />
+                <div className="rulesImg" key={imgName}>
+                    <img src={`electoral-college-go/tutorial/${imgName}.png`} />
                 </div>
             )}
         </div>
