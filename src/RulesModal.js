@@ -93,7 +93,7 @@ function Rules () {
             How to Play Electoral College Go
         </div>
 
-        <div className="rulesImgs">
+        <div className="rulesImgs" style={info.vertical ? {'flex-direction': 'vertical'} : {}}>
             {info.images.map(imgName =>
                 <div className="rulesImg">
                     <img key={imgName} src={`electoral-college-go/tutorial/${imgName}.png`} />
