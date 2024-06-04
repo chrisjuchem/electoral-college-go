@@ -260,7 +260,7 @@ export default function Board ({color}) {
                 > Pass </button>}
             {board && !board.isOver() && <button
                     onClick={(e) => { if (ourTurn) { grantUndo(); } else { requestUndo(); } }}
-                    disabled={(ourTurn && !undoRequested) || board._game._moves.length < 1}
+                    disabled={(ourTurn !== undoRequested) || board._game._moves.length < 1}
                 > { undoRequested
                     ? ourTurn ? "Grant Undo" : "Undo Requested!"
                     : "Request Undo"} </button>}
